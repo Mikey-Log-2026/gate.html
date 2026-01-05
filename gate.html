@@ -40,7 +40,7 @@
         }
     </style>
 </head>
-<body onclick="start();spechSynthesis.speak(newSpechSynthesisUtterance('開錠します'));"lange=ja>
+<body onclick="const ut = new SpeechSynthesisUtterance('かいじょうします');ut.lange = 'ja-JP';window.speechSynthesis.speak(ut);"lange = "ja">
 
     <canvas id="matrix-canvas"></canvas>
     <canvas id="warp-canvas"></canvas>
