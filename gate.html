@@ -40,7 +40,7 @@
         }
     </style>
 </head>
-<body onclick="const ut = new SpeechSynthesisUtterance('かいじょうします。このキーボックスを開いた時、新しい未来への扉が開きます。さあ未知への一歩を踏み出そう。今すぐ、キューアールコードをスキャンするんだ。そこには、これまでの自分ではない未来のあなたが笑顔で手を振って待っています。');ut.lang = 'ja-JP';window.speechSynthesis.speak(ut);start();"lang="ja">
+<body onclick="start();" lang="ja">
 
     <canvas id="matrix-canvas"></canvas>
     <canvas id="warp-canvas"></canvas>
@@ -68,7 +68,7 @@
         let isStarted = false;
         let mReq, wReq;
 
-        // Matrix
+        // Matrix Animation
         const mCanvas = document.getElementById('matrix-canvas');
         const mCtx = mCanvas.getContext('2d');
         mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
@@ -84,7 +84,6 @@
         }
         drawM();
 
-        // Audio Engine
         function playSnd(f, d, t="sawtooth", v=0.1, fade=true) {
             if(!audioCtx) return;
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
@@ -95,13 +94,11 @@
             o.start(); o.stop(audioCtx.currentTime + d);
         }
 
-        // 祝福のメロディ（穏やかな和音）
         function playBlessingChord() {
-            // Cメジャー的な明るい和音を時間差で鳴らす
             const now = audioCtx.currentTime;
             [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
                 const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-                o.type = "sine"; // 穏やかなサイン波
+                o.type = "sine";
                 o.frequency.setValueAtTime(freq, now + i*0.5);
                 g.gain.setValueAtTime(0, now + i*0.5);
                 g.gain.linearRampToValueAtTime(0.05, now + i*0.5 + 1.5);
@@ -125,23 +122,37 @@
         function runCrawl() {
             const swWin = document.getElementById('sw-win');
             const txt = document.getElementById('text-content');
-            swWin.style.visibility = 'visible'; txt.style.display = 'block';
+            swWin.style.visibility = 'visible'; 
+            txt.style.display = 'block';
+
             const uttr = new SpeechSynthesisUtterance(txt.innerText);
             const voices = window.speechSynthesis.getVoices();
             uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri"))) || voices[0];
-            uttr.rate = 0.85;
+            uttr.rate = 0.9;
+            uttr.lang = 'ja-JP';
 
             let startTime = null;
+            const scrollDuration = 22000; // スクロール時間を調整
+
             function scrollStep(timestamp) {
                 if (!startTime) startTime = timestamp;
-                const progress = (timestamp - startTime) / 28000;
+                const progress = (timestamp - startTime) / scrollDuration;
                 txt.style.transform = `rotateX(25deg) translateY(${progress * -180}%)`;
                 if (progress < 1 && isStarted) requestAnimationFrame(scrollStep);
             }
             requestAnimationFrame(scrollStep);
-            uttr.onend = () => { setTimeout(showDoor, 1000); };
-            //window.speechSynthesis.speak(uttr);
-            setTimeout(() => { if(swWin.style.display !== 'none') showDoor(); }, 30000);
+
+            // 読み上げが終わったらすぐにドアを表示
+            uttr.onend = () => { 
+                setTimeout(showDoor, 100); 
+            };
+
+            window.speechSynthesis.speak(uttr);
+
+            // バックアップ用（読み上げが機能しない場合でも25秒後に進む）
+            setTimeout(() => { 
+                if(swWin.style.display !== 'none') showDoor(); 
+            }, 25000);
         }
 
         function showDoor() {
@@ -151,8 +162,8 @@
                 playSnd(60, 2);
                 document.getElementById('door-leaf').style.transform = 'rotateY(-115deg)';
                 document.getElementById('final-text-logo').style.opacity = '1';
-                setTimeout(runWarp, 3500);
-            }, 1000);
+                setTimeout(runWarp, 3000); // ドアが開いている時間も少し短縮
+            }, 800);
         }
 
         function runWarp() {
@@ -185,11 +196,10 @@
                     document.body.classList.remove('shaking');
                     cancelAnimationFrame(wReq);
                     wCanvas.style.display = 'none';
-                    // ここで祝福の音を鳴らす
                     playBlessingChord();
                     document.getElementById('blessing-msg').style.opacity = '1';
                 }, 1000);
-            }, 3000);
+            }, 2500); // ワープ時間も少しタイトに
         }
     </script>
 </body>
