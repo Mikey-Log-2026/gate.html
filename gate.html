@@ -2,151 +2,115 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Mikey-log-2026 | Star Wars Matrix Gate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gate - Mikey Log</title>
     <style>
-        body { margin: 0; background: black; overflow: hidden; font-family: 'Courier New', monospace; }
-        canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; }
+        #matrix { position: fixed; top: 0; left: 0; z-index: 1; }
 
-        #ui-layer {
-            position: relative; z-index: 10;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 100vh;
+        .door-wrapper { position: relative; width: 100%; height: 100%; perspective: 1500px; z-index: 10; }
+        .door {
+            position: absolute; top: 0; width: 50%; height: 100%;
+            background-image: url('image.PNG'); background-size: cover; background-position: center;
+            border: 2px solid #0f0; transition: transform 3.0s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .left { left: 0; transform-origin: left; }
+        .right { right: 0; transform-origin: right; }
+        .open .left { transform: rotateY(-110deg); opacity: 0; }
+        .open .right { transform: rotateY(110deg); opacity: 0; }
 
-        /* 扉と画像 */
-        .door-box {
-            width: 400px; height: 500px; border: 3px solid #0f0;
-            position: relative; cursor: pointer; background: black;
-            box-shadow: 0 0 40px rgba(0,255,0,0.4);
-            z-index: 20;
+        /* スターウォーズ風クロール */
+        .crawl-container {
+            position: absolute; bottom: -100px; width: 100%;
+            display: flex; justify-content: center; z-index: 5;
+            transform-origin: 50% 100%; transform: perspective(300px) rotateX(25deg);
         }
-        .door-l, .door-r {
-            position: absolute; width: 50%; height: 100%; background: #111;
-            border: 1px solid #0f0; transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 25; display: flex; align-items: center; justify-content: center;
+        .crawl-text {
+            color: #ffe81f; font-weight: bold; text-align: center; font-size: 1.8rem; line-height: 2.2;
+            animation: crawl 35s linear infinite;
         }
-        .door-r { right: 0; }
-        .open .door-l { transform: translateX(-100%); }
-        .open .door-r { transform: translateX(100%); }
-
-        #art-box {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 5; background: #000;
-        }
-        #art-box img { width: 95%; height: 95%; object-fit: contain; }
-
-        /* --- スター・ウォーズ風クロール設定 --- */
-        #crawl-container {
-            display: none; /* 最初は隠す */
-            position: absolute;
-            bottom: 0; width: 60%;
-            height: 100%;
-            perspective: 300px; /* 3D遠近感 */
-            color: #ffde00;
-            font-family: "Arial Black", sans-serif;
-            text-align: justify;
-            z-index: 30;
-            pointer-events: none; /* クリックを邪魔しない */
-        }
-        #crawl-content {
-            position: absolute;
-            top: 100%;
-            transform: rotateX(25deg);
-            animation: sw-crawl 30s linear forwards;
-        }
-        @keyframes sw-crawl {
-            0% { top: 100%; opacity: 1; }
-            100% { top: -150%; opacity: 0; }
+        @keyframes crawl {
+            0% { transform: translateY(100%); }
+            100% { transform: translateY(-350%); }
         }
 
-        /* BTTF & メッセージ */
-        .bttf-style {
-            font-family: 'Arial Black', sans-serif; font-style: italic; font-weight: 900;
-            color: #ff9e00; text-shadow: 4px 4px #ff0000;
-            font-size: 3rem; margin-top: 20px; opacity: 0; transition: 2s;
+        .center-title {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            color: #ffe81f; text-align: center; z-index: 20; cursor: pointer;
+            text-shadow: 0 0 20px #f00; font-size: 3.5rem; letter-spacing: 10px;
         }
-        .bless-msg { color: #fff; font-size: 1.8rem; margin-top: 5px; opacity: 0; transition: 3s; font-weight: bold; }
-        .show { opacity: 1 !important; }
     </style>
 </head>
 <body>
 
-<canvas id="matrix-canvas"></canvas>
+<canvas id="matrix"></canvas>
 
-<div id="ui-layer">
-    <div id="crawl-container">
-        <div id="crawl-content">
-            <h2 style="text-align:center;">Episode 2026</h2>
-            <h1 style="text-align:center;">THE GATE OPENED</h1>
-            <p>It is a period of digital revolution. Mikey-log-2026 has successfully integrated the legendary soundtrack into the Matrix gateway...</p>
-            <p>With the power of Web Audio API, the galaxy resonates with a new hope. May the code be with you forever...</p>
-        </div>
-    </div>
-
-    <div id="gate" class="door-box" onclick="activateGate()">
-        <div id="art-box">
-            <img src="image.PNG" alt="Art">
-        </div>
-        <div class="door-l"><span style="color:#0f0; font-size:40px;">[</span></div>
-        <div class="door-r"><span style="color:#0f0; font-size:40px;">]</span></div>
-    </div>
+<div class="door-wrapper" id="wrapper" onclick="startSequence()">
+    <div class="door left"></div>
+    <div class="door right"></div>
     
-    <div id="bttf" class="bttf-style">BACK TO THE FUTURE!</div>
-    <div id="bless" class="bless-msg">君に幸あれ</div>
+    <div class="crawl-container">
+        <div class="crawl-text">
+            2026年<br>
+            鍵の管理はMiKey Logへ移行となる。<br><br>
+            人々はQRコードをかざすだけで<br>
+            キーボックスの扉を開き、<br>
+            大幅な管理工数を削減する事になる。<br><br>
+            さぁ〜未知への扉を開けて、<br>
+            笑顔で待っている貴方に手を伸ばそう！
+        </div>
+    </div>
+
+    <div class="center-title" id="title">
+        MIKEY LOG 2026<br>
+        <span style="font-size: 1rem; letter-spacing: 2px;">CLICK TO AUTHORIZE</span>
+    </div>
 </div>
 
 <script>
-// --- マトリックス背景 ---
-const canvas = document.getElementById('matrix-canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-const drops = Array(Math.floor(canvas.width/16)).fill(1);
-function drawMatrix() {
-    ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = "#0f0"; ctx.font = "16px monospace";
-    drops.forEach((y, i) => {
-        const text = String.fromCharCode(0x30A0 + Math.random() * 96);
-        ctx.fillText(text, i*16, y*16);
-        if(y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-    });
-}
-setInterval(drawMatrix, 33);
+    function speak(msg) {
+        const uttr = new SpeechSynthesisUtterance(msg);
+        uttr.lang = 'ja-JP';
+        uttr.rate = 1.0;
+        uttr.pitch = 0.9;
+        window.speechSynthesis.speak(uttr);
+    }
 
-// --- 音声とアクション ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playTone(f, s, d, type='sine', v=0.2) {
-    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, s);
-    g.gain.setValueAtTime(v, s); g.gain.exponentialRampToValueAtTime(0.01, s + d);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(s); o.stop(s + d);
-}
+    function startSequence() {
+        // 全文を読み上げ
+        const message = "2026年。鍵の管理は、マイキー ログへ移行となり、人々はキューアールコードをかざすだけでキーボックスの扉を開いて大幅な管理工数を削減する事になる。さぁ〜未知への扉を開けて笑顔で待っている貴方に手を伸ばそう！";
+        speak(message);
+        
+        document.getElementById('wrapper').classList.add('open');
+        document.getElementById('title').style.display = 'none';
 
-function activateGate() {
-    const now = audioCtx.currentTime;
-    document.getElementById('gate').classList.add('open');
-    document.getElementById('crawl-container').style.display = 'block';
+        // セリフが長いので、遷移までの時間を調整（9秒程度）
+        setTimeout(() => {
+            window.location.href = 'menu.html';
+        }, 9000);
+    }
 
-    // 1. チャイム & SWファンファーレ
-    playTone(659, now, 0.5); playTone(523, now + 0.4, 0.7);
-    const sw = now + 1.2;
-    playTone(233, sw, 1.2, 'sawtooth', 0.3);
-    playTone(349, sw, 1.2, 'sawtooth', 0.3);
-    playTone(466, sw, 1.2, 'sawtooth', 0.3);
-
-    // 2. セリフ
-    const uttr = new SpeechSynthesisUtterance("Welcome to mikey-log-2026. 君に幸あれ");
-    uttr.lang = 'ja-JP';
-    speechSynthesis.speak(uttr);
-
-    // 3. メッセージ表示
-    setTimeout(() => {
-        document.getElementById('bttf').classList.add('show');
-        document.getElementById('bless').classList.add('show');
-    }, 1200);
-}
+    /* マトリックス描画 */
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const chars = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ0123456789";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+    function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0f0";
+        ctx.font = fontSize + "px monospace";
+        drops.forEach((y, i) => {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, y * fontSize);
+            if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        });
+    }
+    setInterval(draw, 50);
 </script>
 </body>
 </html>
