@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Mikey-log-2026 | Gate</title>
+    <title>Mikey-log-2026 | Ultimate Gate</title>
     <style>
         body { margin: 0; background: black; overflow: hidden; font-family: 'Courier New', monospace; }
-        canvas { position: fixed; top: 0; left: 0; z-index: 1; } /* マトリックス用 */
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; } /* マトリックス */
 
-        #ui-layer {
+        #main-ui {
             position: relative;
             z-index: 10;
             display: flex;
@@ -15,124 +15,133 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            color: #0f0;
         }
 
-        /* 扉の演出 */
-        .door-container { width: 200px; height: 300px; border: 2px solid #0f0; cursor: pointer; position: relative; overflow: hidden; transition: 0.5s; }
-        .door-container:hover { box-shadow: 0 0 20px #0f0; }
-        .door-left, .door-right {
-            position: absolute; width: 50%; height: 100%; background: #111; border: 1px solid #0f0;
-            transition: transform 1s;
+        /* 扉のギミック */
+        .door-box {
+            width: 260px; height: 320px; border: 2px solid #0f0;
+            position: relative; cursor: pointer; background: rgba(0,20,0,0.5);
         }
-        .door-right { right: 0; }
-        .open .door-left { transform: translateX(-100%); }
-        .open .door-right { transform: translateX(100%); }
-
-        /* 絵の表示 */
-        #art-display { width: 150px; height: 150px; border: 1px solid #0f0; margin-top: 20px; display: none; }
-
-        /* BTTF風テキスト / 君に幸あれ */
-        .bttf-text { font-family: sans-serif; font-style: italic; font-weight: bold; color: #ff9e00; text-shadow: 2px 2px #ff0000; font-size: 2rem; display: none; }
-        
-        /* SW流れる文字 */
-        #star-wars-crawl {
-            position: absolute; bottom: 0; width: 60%; color: #ffde00; 
-            text-align: justify; perspective: 300px; display: none;
+        .door-l, .door-r {
+            position: absolute; width: 50%; height: 100%; background: #111;
+            border: 1px solid #0f0; transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .crawl-content { transform: rotateX(25deg); animation: crawlMove 30s linear forwards; }
-        @keyframes crawlMove { from { transform: rotateX(25deg) translateY(100%); } to { transform: rotateX(25deg) translateY(-200%); } }
+        .door-r { right: 0; }
+        .open .door-l { transform: translateX(-100%); }
+        .open .door-r { transform: translateX(100%); }
+
+        /* 絵の表示エリア（扉の中） */
+        #art-box {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px; height: 180px;
+            background: #000; border: 1px solid #0f0;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 5;
+        }
+        #art-box img { max-width: 100%; max-height: 100%; }
+
+        /* テロップ（ニュースのように流れる） */
+        #telop-container {
+            position: fixed; top: 20px; width: 100%; height: 40px;
+            background: rgba(0, 50, 0, 0.7); border-y: 1px solid #0f0;
+            overflow: hidden; white-space: nowrap; z-index: 20;
+        }
+        #telop-text {
+            display: inline-block; padding-left: 100%;
+            color: #0f0; font-size: 1.5rem; font-weight: bold;
+            animation: telop-scroll 20s linear infinite;
+        }
+        @keyframes telop-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+
+        /* BTTF風テキスト */
+        .bttf-style {
+            font-family: sans-serif; font-style: italic; font-weight: 900;
+            color: #ff9e00; text-shadow: 3px 3px #ff0000;
+            font-size: 2.5rem; margin-top: 20px; opacity: 0; transition: 2s;
+        }
+
+        /* 君に幸あれ */
+        .bless-msg { color: #fff; font-size: 1.2rem; margin-top: 10px; opacity: 0; transition: 3s; }
+
+        .show { opacity: 1 !important; }
     </style>
 </head>
 <body>
 
-<canvas id="matrix"></canvas>
+<canvas id="matrix-bg"></canvas>
 
-<div id="ui-layer">
-    <div id="gate-door" class="door-container" onclick="openGate()">
-        <div class="door-left"></div>
-        <div class="door-right"></div>
-    </div>
-    
-    <div id="art-display">🎨 ここに絵が表示</div>
-    
-    <div id="bttf-msg" class="bttf-text">BACK TO THE FUTURE!</div>
-    <div id="bless-msg" style="display:none; color: white; margin-top:20px;">君に幸あれ</div>
+<div id="telop-container">
+    <div id="telop-text">WELCOME TO MIKEY-LOG-2026 GALAXY --- SYSTEM INITIALIZED --- PREPARING FOR JUMP ---</div>
+</div>
 
-    <div id="star-wars-crawl">
-        <div class="crawl-content">
-            <p>Episode 2026</p>
-            <p>MAY THE CODE BE WITH YOU</p>
-            <p>Mikey-log-2026 has opened the gate to the digital future...</p>
+<div id="main-ui">
+    <div id="gate-wrap" class="door-box" onclick="activateGate()">
+        <div id="art-box">
+            <span style="color:#0f0">ART WORK</span>
         </div>
+        <div class="door-l"></div>
+        <div class="door-r"></div>
     </div>
+    
+    <div id="bttf-text" class="bttf-style">BACK TO THE FUTURE!</div>
+    <div id="bless-text" class="bless-msg">君に幸あれ</div>
 </div>
 
 <script>
-// --- マトリックス描画 ---
-const canvas = document.getElementById('matrix');
+// --- マトリックス背景 ---
+const canvas = document.getElementById('matrix-bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const fontSize = 16;
-const columns = canvas.width / fontSize;
-const drops = Array(Math.floor(columns)).fill(1);
-
-function drawMatrix() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+const chars = "0101010101ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const drops = Array(Math.floor(canvas.width/16)).fill(1);
+function draw() {
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = "#0f0";
-    ctx.font = fontSize + "px monospace";
+    ctx.font = "16px monospace";
     drops.forEach((y, i) => {
-        const text = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(text, i * fontSize, y * fontSize);
-        if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        const text = chars[Math.floor(Math.random()*chars.length)];
+        ctx.fillText(text, i*16, y*16);
+        if(y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
         drops[i]++;
     });
 }
-setInterval(drawMatrix, 33);
+setInterval(draw, 33);
 
-// --- 音声生成 (SWファンファーレ + チャイム) ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-
-function playSound(freq, startTime, duration, type='sawtooth', vol=0.2) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    gain.gain.setValueAtTime(vol, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(startTime);
-    osc.stop(startTime + duration);
+// --- 音声生成機能 ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(f, s, d, type='sine', v=0.2) {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, s);
+    g.gain.setValueAtTime(v, s);
+    g.gain.exponentialRampToValueAtTime(0.01, s + d);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(s); o.stop(s + d);
 }
 
-function openGate() {
-    if (!audioCtx) audioCtx = new AudioContext();
+function activateGate() {
     const now = audioCtx.currentTime;
-
-    // 1. 扉が開く演出
-    document.getElementById('gate-door').classList.add('open');
     
-    // 2. チャイム音 (ピンポーン)
-    playSound(659.25, now, 0.5, 'sine'); // E5
-    playSound(523.25, now + 0.5, 0.8, 'sine'); // C5
+    // 扉を開ける
+    document.getElementById('gate-wrap').classList.add('open');
 
-    // 3. スターウォーズ・ファンファーレ (少し遅れて開始)
-    const sw = now + 1.5;
-    playSound(233.08, sw, 1.5, 'sawtooth', 0.3); // Bb3
-    playSound(349.23, sw, 1.5, 'sawtooth', 0.3); // F4
-    playSound(466.16, sw, 1.5, 'sawtooth', 0.3); // Bb4
+    // 1. チャイム（ピンポーン）
+    playTone(659, now, 0.5, 'sine'); 
+    playTone(523, now + 0.4, 0.7, 'sine');
 
-    // 4. 各種表示の切り替え
+    // 2. スターウォーズ・ファンファーレ（1秒後から）
+    const sw = now + 1.2;
+    playTone(233, sw, 1.2, 'sawtooth', 0.3); // Bb
+    playTone(349, sw, 1.2, 'sawtooth', 0.3); // F
+    playTone(466, sw, 1.2, 'sawtooth', 0.3); // Bb High
+
+    // 3. テキストの表示
     setTimeout(() => {
-        document.getElementById('art-display').style.display = 'block';
-        document.getElementById('bttf-msg').style.display = 'block';
-        document.getElementById('bless-msg').style.display = 'block';
-        document.getElementById('star-wars-crawl').style.display = 'block';
+        document.getElementById('bttf-text').classList.add('show');
+        document.getElementById('bless-text').classList.add('show');
     }, 1000);
 }
 </script>
