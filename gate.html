@@ -1,229 +1,138 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>開錠</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikey-log-2026 | Gate</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
-        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #matrix-canvas { z-index: 1; }
-        #warp-canvas { z-index: 60; display: none; }
-
-        #guide-msg {
-            position: absolute; top: 50%; left: 0; width: 100%; text-align: center;
-            color: #0f0; cursor: pointer; font-size: 24px; font-weight: bold;
-            transform: translateY(-50%); z-index: 100; border: 1px solid #0f0;
-            padding: 40px 0; background: rgba(0,0,0,0.9); letter-spacing: 0.3em;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: #ff6; /* スターウォーズ・イエロー */
+            font-family: "Arial Black", sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        .star-wars-window { position: absolute; width: 100%; height: 100%; perspective: 350px; display: flex; justify-content: center; z-index: 2; visibility: hidden; }
-        .crawl-text {
-            position: absolute; width: 85%; bottom: -10%; font-size: 6.5vw;
-            font-weight: 900; text-align: center; line-height: 2.5;
-            transform-origin: 50% 100%; transform: rotateX(25deg);
-            color: #feda4a; text-shadow: 0 0 10px rgba(254, 218, 74, 0.8);
-        }
-        @media screen and (min-width: 768px) { .crawl-text { font-size: 34px; } }
-
-        #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
-        #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; }
-        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 30px #0f0; }
-
-        .shaking { animation: screen-shake 0.1s infinite; }
-        @keyframes screen-shake { 0% { transform: translate(3px, -3px); } 50% { transform: translate(-3px, 3px); } 100% { transform: translate(0,0); } }
-       
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 999; }
-        
-        #final-image-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('image.PNG') no-repeat center center;
-            background-size: cover;
-            opacity: 0; z-index: 1000; transition: opacity 2s ease-in-out;
+        /* 背景の星空演出 */
+        #stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(white, rgba(255,255,255,0) 2px) 0 0/50px 50px,
+                        radial-gradient(white, rgba(255,255,255,0) 2px) 10px 20px/100px 100px;
+            opacity: 0.5;
+            z-index: -1;
         }
 
-        #blessing-msg {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #fff; font-size: 48px; font-weight: bold; opacity: 0; z-index: 1001;
-            transition: opacity 3s; white-space: nowrap; letter-spacing: 0.1em;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.8), -2px -2px 10px rgba(0,0,0,0.8);
+        #gate-container {
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        #gate-container:hover {
+            transform: scale(1.1);
+        }
+
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px #ff6;
+        }
+
+        p {
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        /* 流れる文字の演出（クリック後に表示） */
+        #crawl-container {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            width: 60%;
+            perspective: 400px; /* 3D遠近感 */
+            text-align: justify;
+        }
+
+        #crawl-content {
+            transform: rotateX(25deg) translateY(100%);
+            animation: crawl 30s linear forwards;
+        }
+
+        @keyframes crawl {
+            0% { transform: rotateX(25deg) translateY(100%); }
+            100% { transform: rotateX(25deg) translateY(-200%); }
         }
     </style>
 </head>
-<body onclick="start();">
+<body>
 
-    <canvas id="matrix-canvas"></canvas>
-    <canvas id="warp-canvas"></canvas>
-    <div id="guide-msg">READY...<br>TAP TO START</div>
+<div id="stars"></div>
 
-    <div class="star-wars-window" id="sw-win">
-        <div id="text-content" class="crawl-text">
-            このキーボックスの扉を開いた時、<br>新しい未来への扉が開きます。<br><br>
-            さぁ未知への一歩を踏み出そう。<br><br>
-            今すぐ、QRコードをスキャンするんだ！<br><br>
-            そこには、これまでの自分ではない<br>未来のあなたが笑顔で<br>手を振って待っています。
-        </div>
+<div id="gate-container" onclick="startExperience()">
+    <h1>MIKEY LOG 2026</h1>
+    <p>CLICK TO ENTER THE GALAXY</p>
+</div>
+
+<div id="crawl-container">
+    <div id="crawl-content">
+        <h2>Episode 1: The New Gate</h2>
+        <p>It is a period of digital exploration. Mikey-log-2026 has built a new gateway on GitHub Pages...</p>
+        <p>This page uses Web Audio API to generate sound waves without any external mp3 files.</p>
+        <p>May the code be with you...</p>
     </div>
+</div>
 
-    <div id="door-wrapper">
-        <div id="final-text-logo">MiKey Log</div>
-        <div id="door-leaf"></div>
-    </div>
-   
-    <div id="white-screen"></div>
+<script>
+function startExperience() {
+    // コンテナの切り替え
+    document.getElementById('gate-container').style.display = 'none';
+    document.getElementById('crawl-container').style.display = 'block';
+
+    // Web Audio APIの開始
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playNote(freq, startTime, duration, volume = 0.2) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sawtooth'; // 金管楽器風のノコギリ波
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(volume, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+    }
+
+    const now = audioCtx.currentTime;
+
+    // --- メイン・ファンファーレの再現 ---
+    // 1. ジャーン！ (Bb Major)
+    playNote(233.08, now, 2.0, 0.3); // Bb3
+    playNote(349.23, now, 2.0, 0.3); // F4
+    playNote(466.16, now, 2.0, 0.3); // Bb4
+
+    // 2. パパパパーン (タッタッタッ)
+    const rhythm = 0.2;
+    playNote(349.23, now + 2.0, rhythm);       // F4
+    playNote(311.13, now + 2.0 + rhythm, rhythm); // Eb4
+    playNote(293.66, now + 2.0 + rhythm*2, rhythm); // D4
+    playNote(466.16, now + 2.0 + rhythm*3, 1.5, 0.3); // Bb4 (High)
     
-    <div id="final-image-bg"></div>
-    <div id="blessing-msg">君に幸あれ！</div>
+    // 3秒後に自動転送したい場合は以下をコメントアウト解除
+    // setTimeout(() => { window.location.href = "home.html"; }, 10000);
+}
+</script>
 
-    <script>
-        let audioCtx;
-        let isStarted = false;
-        let mReq, wReq;
-
-        const mCanvas = document.getElementById('matrix-canvas');
-        const mCtx = mCanvas.getContext('2d');
-        mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
-        const drops = Array(Math.floor(mCanvas.width/25)).fill(1);
-        
-        function drawM() {
-            mCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-            mCtx.fillStyle = "#0F0"; mCtx.font = "15px monospace";
-            drops.forEach((y, i) => {
-                mCtx.fillText(Math.random()>0.5?"0":"1", i*25, y*18);
-                if (y*18 > mCanvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
-            });
-            mReq = requestAnimationFrame(drawM);
-        }
-        drawM();
-
-        // iOS用の音声リスト読み込み対策
-        window.speechSynthesis.getVoices();
-
-        function playSnd(f, d, t="sawtooth", v=0.1, fade=true) {
-            if(!audioCtx) return;
-            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
-            g.gain.setValueAtTime(v, audioCtx.currentTime);
-            if(fade) g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
-            o.connect(g); g.connect(audioCtx.destination);
-            o.start(); o.stop(audioCtx.currentTime + d);
-        }
-
-        function playBlessingChord() {
-            const now = audioCtx.currentTime;
-            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-                o.type = "sine";
-                o.frequency.setValueAtTime(freq, now + i*0.5);
-                g.gain.setValueAtTime(0, now + i*0.5);
-                g.gain.linearRampToValueAtTime(0.05, now + i*0.5 + 1.5);
-                g.gain.linearRampToValueAtTime(0, now + i*0.5 + 6);
-                o.connect(g); g.connect(audioCtx.destination);
-                o.start(now + i*0.5); o.stop(now + i*0.5 + 7);
-            });
-        }
-
-        function start() {
-            if(isStarted) return; 
-            isStarted = true;
-            
-            // AudioContextの初期化
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            cancelAnimationFrame(mReq);
-            document.getElementById('matrix-canvas').style.display = 'none';
-            document.getElementById('guide-msg').style.display = 'none';
-            
-            // 進行中の音声をキャンセル
-            window.speechSynthesis.cancel();
-            
-            playSnd(440, 0.1, "sine", 0.05);
-            setTimeout(runCrawl, 100);
-        }
-
-        function runCrawl() {
-            const swWin = document.getElementById('sw-win');
-            const txt = document.getElementById('text-content');
-            swWin.style.visibility = 'visible'; 
-            txt.style.display = 'block';
-
-            const uttr = new SpeechSynthesisUtterance(txt.innerText);
-            
-            // iOS対策: 再生直前にボイスを再取得して設定
-            const voices = window.speechSynthesis.getVoices();
-            const jpVoice = voices.find(v => v.lang === 'ja-JP' || v.lang === 'ja_JP');
-            if (jpVoice) {
-                uttr.voice = jpVoice;
-            }
-            uttr.lang = 'ja-JP'; // 言語を日本語に固定
-            uttr.rate = 0.9;
-
-            let startTime = null;
-            const scrollDuration = 22000;
-
-            function scrollStep(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = (timestamp - startTime) / scrollDuration;
-                txt.style.transform = `rotateX(25deg) translateY(${progress * -180}%)`;
-                if (progress < 1 && isStarted) requestAnimationFrame(scrollStep);
-            }
-            requestAnimationFrame(scrollStep);
-
-            uttr.onend = () => { setTimeout(showDoor, 100); };
-            window.speechSynthesis.speak(uttr);
-            
-            // 音声が止まってしまった場合のバックアップタイマー
-            setTimeout(() => { if(swWin.style.display !== 'none') showDoor(); }, 25000);
-        }
-
-        function showDoor() {
-            document.getElementById('sw-win').style.display = 'none';
-            document.getElementById('door-wrapper').style.display = 'block';
-            setTimeout(() => {
-                playSnd(60, 2);
-                document.getElementById('door-leaf').style.transform = 'rotateY(-115deg)';
-                document.getElementById('final-text-logo').style.opacity = '1';
-                setTimeout(runWarp, 3000);
-            }, 800);
-        }
-
-        function runWarp() {
-            const wCanvas = document.getElementById('warp-canvas');
-            const wCtx = wCanvas.getContext('2d');
-            wCanvas.style.display = 'block';
-            wCanvas.width = window.innerWidth; wCanvas.height = window.innerHeight;
-            document.body.classList.add('shaking');
-            let stars = [];
-            for(let i=0; i<150; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
-            
-            function animateWarp() {
-                wCtx.fillStyle="rgba(0,0,0,0.3)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
-                wCtx.strokeStyle="#fff"; wCtx.lineWidth=2;
-                stars.forEach(s => {
-                    s.z -= 25; if(s.z <= 0) s.z = wCanvas.width;
-                    let x = (s.x / s.z) * wCanvas.width + wCanvas.width/2;
-                    let y = (s.y / s.z) * wCanvas.height + wCanvas.height/2;
-                    let x2 = (s.x / (s.z + 50)) * wCanvas.width + wCanvas.width/2;
-                    let y2 = (s.y / (s.z + 50)) * wCanvas.height + wCanvas.height/2;
-                    wCtx.beginPath(); wCtx.moveTo(x,y); wCtx.lineTo(x2,y2); wCtx.stroke();
-                });
-                wReq = requestAnimationFrame(animateWarp);
-            }
-            animateWarp();
-            playSnd(180, 4, "square", 0.05);
-
-            setTimeout(() => {
-                document.getElementById('white-screen').style.opacity = '1';
-                setTimeout(() => {
-                    document.body.classList.remove('shaking');
-                    cancelAnimationFrame(wReq);
-                    wCanvas.style.display = 'none';
-                    document.getElementById('final-image-bg').style.opacity = '1';
-                    document.getElementById('blessing-msg').style.opacity = '1';
-                    playBlessingChord();
-                }, 1000);
-            }, 2500);
-        }
-    </script>
 </body>
 </html>
