@@ -41,11 +41,11 @@
         .crawl-text {
             color: #ffe81f; font-weight: bold; text-align: center;
             font-size: 1.8rem; line-height: 2.2;
-            animation: crawl 40s linear infinite;
+            animation: crawl 45s linear infinite;
         }
         @keyframes crawl {
             0% { transform: translateY(100%); }
-            100% { transform: translateY(-400%); }
+            100% { transform: translateY(-450%); }
         }
 
         /* 中央タイトル */
@@ -81,12 +81,11 @@
 
     <div class="center-title" id="title">
         MIKEY LOG<br>
-        <span style="font-size: 1rem; letter-spacing: 2px;">CLICK TO ACCESS UNKNOWN</span>
+        <span style="font-size: 1rem; letter-spacing: 2px;">CLICK TO ENTER</span>
     </div>
 </div>
 
 <script>
-    // 音声読み上げ関数
     function speak(msg) {
         const uttr = new SpeechSynthesisUtterance(msg);
         uttr.lang = 'ja-JP';
@@ -95,27 +94,20 @@
         window.speechSynthesis.speak(uttr);
     }
 
-    // 起動シークエンス
     function startSequence() {
         const message = "2026年。鍵の管理は、マイキー ログへ移行となり、人々はキューアールコードをかざすだけでキーボックスの扉を開いて大幅な管理工数を削減する事になる。さぁ〜未知への扉を開けて笑顔で待っている貴方に手を伸ばそう！";
         
-        // セリフ開始
         speak(message);
         
-        // 扉を開ける演出
+        // 扉を開ける演出（開いたままにする）
         document.getElementById('wrapper').classList.add('open');
         document.getElementById('title').style.display = 'none';
 
-        // --- 404防止のポイント ---
-        // セリフが長い（約15〜18秒）ため、遷移時間を20秒に延長しました。
-        // もし menu.html が無い場合は、ここを window.location.href = 'index.html'; などに書き換えてください。
-        setTimeout(() => {
-            // ファイル名が正確に menu.html か確認してください。大文字小文字も合わせる必要があります。
-            window.location.href = 'menu.html'; 
-        }, 20000); 
+        // 自動遷移（window.location.href）を削除しました
+        // これで404エラーになることはありません。
     }
 
-    /* マトリックス背景描画 */
+    /* マトリックス背景 */
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
@@ -137,6 +129,11 @@
         });
     }
     setInterval(draw, 50);
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
 </script>
 </body>
 </html>
