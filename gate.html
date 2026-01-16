@@ -2,135 +2,138 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mikey-log-2026 | Gate</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: black;
-            color: #ff6; /* スターウォーズ・イエロー */
-            font-family: "Arial Black", sans-serif;
-            overflow: hidden;
+        body { margin: 0; background: black; overflow: hidden; font-family: 'Courier New', monospace; }
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; } /* マトリックス用 */
+
+        #ui-layer {
+            position: relative;
+            z-index: 10;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             height: 100vh;
+            color: #0f0;
         }
 
-        /* 背景の星空演出 */
-        #stars {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(white, rgba(255,255,255,0) 2px) 0 0/50px 50px,
-                        radial-gradient(white, rgba(255,255,255,0) 2px) 10px 20px/100px 100px;
-            opacity: 0.5;
-            z-index: -1;
+        /* 扉の演出 */
+        .door-container { width: 200px; height: 300px; border: 2px solid #0f0; cursor: pointer; position: relative; overflow: hidden; transition: 0.5s; }
+        .door-container:hover { box-shadow: 0 0 20px #0f0; }
+        .door-left, .door-right {
+            position: absolute; width: 50%; height: 100%; background: #111; border: 1px solid #0f0;
+            transition: transform 1s;
         }
+        .door-right { right: 0; }
+        .open .door-left { transform: translateX(-100%); }
+        .open .door-right { transform: translateX(100%); }
 
-        #gate-container {
-            text-align: center;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
+        /* 絵の表示 */
+        #art-display { width: 150px; height: 150px; border: 1px solid #0f0; margin-top: 20px; display: none; }
 
-        #gate-container:hover {
-            transform: scale(1.1);
+        /* BTTF風テキスト / 君に幸あれ */
+        .bttf-text { font-family: sans-serif; font-style: italic; font-weight: bold; color: #ff9e00; text-shadow: 2px 2px #ff0000; font-size: 2rem; display: none; }
+        
+        /* SW流れる文字 */
+        #star-wars-crawl {
+            position: absolute; bottom: 0; width: 60%; color: #ffde00; 
+            text-align: justify; perspective: 300px; display: none;
         }
-
-        h1 {
-            font-size: 3rem;
-            letter-spacing: 5px;
-            text-shadow: 0 0 10px #ff6;
-        }
-
-        p {
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-        }
-
-        /* 流れる文字の演出（クリック後に表示） */
-        #crawl-container {
-            display: none;
-            position: absolute;
-            bottom: 0;
-            width: 60%;
-            perspective: 400px; /* 3D遠近感 */
-            text-align: justify;
-        }
-
-        #crawl-content {
-            transform: rotateX(25deg) translateY(100%);
-            animation: crawl 30s linear forwards;
-        }
-
-        @keyframes crawl {
-            0% { transform: rotateX(25deg) translateY(100%); }
-            100% { transform: rotateX(25deg) translateY(-200%); }
-        }
+        .crawl-content { transform: rotateX(25deg); animation: crawlMove 30s linear forwards; }
+        @keyframes crawlMove { from { transform: rotateX(25deg) translateY(100%); } to { transform: rotateX(25deg) translateY(-200%); } }
     </style>
 </head>
 <body>
 
-<div id="stars"></div>
+<canvas id="matrix"></canvas>
 
-<div id="gate-container" onclick="startExperience()">
-    <h1>MIKEY LOG 2026</h1>
-    <p>CLICK TO ENTER THE GALAXY</p>
-</div>
+<div id="ui-layer">
+    <div id="gate-door" class="door-container" onclick="openGate()">
+        <div class="door-left"></div>
+        <div class="door-right"></div>
+    </div>
+    
+    <div id="art-display">🎨 ここに絵が表示</div>
+    
+    <div id="bttf-msg" class="bttf-text">BACK TO THE FUTURE!</div>
+    <div id="bless-msg" style="display:none; color: white; margin-top:20px;">君に幸あれ</div>
 
-<div id="crawl-container">
-    <div id="crawl-content">
-        <h2>Episode 1: The New Gate</h2>
-        <p>It is a period of digital exploration. Mikey-log-2026 has built a new gateway on GitHub Pages...</p>
-        <p>This page uses Web Audio API to generate sound waves without any external mp3 files.</p>
-        <p>May the code be with you...</p>
+    <div id="star-wars-crawl">
+        <div class="crawl-content">
+            <p>Episode 2026</p>
+            <p>MAY THE CODE BE WITH YOU</p>
+            <p>Mikey-log-2026 has opened the gate to the digital future...</p>
+        </div>
     </div>
 </div>
 
 <script>
-function startExperience() {
-    // コンテナの切り替え
-    document.getElementById('gate-container').style.display = 'none';
-    document.getElementById('crawl-container').style.display = 'block';
+// --- マトリックス描画 ---
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const fontSize = 16;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
 
-    // Web Audio APIの開始
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function drawMatrix() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0f0";
+    ctx.font = fontSize + "px monospace";
+    drops.forEach((y, i) => {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, y * fontSize);
+        if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+    });
+}
+setInterval(drawMatrix, 33);
 
-    function playNote(freq, startTime, duration, volume = 0.2) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+// --- 音声生成 (SWファンファーレ + チャイム) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
 
-        osc.type = 'sawtooth'; // 金管楽器風のノコギリ波
-        osc.frequency.setValueAtTime(freq, startTime);
+function playSound(freq, startTime, duration, type='sawtooth', vol=0.2) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+}
 
-        gain.gain.setValueAtTime(volume, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-    }
-
+function openGate() {
+    if (!audioCtx) audioCtx = new AudioContext();
     const now = audioCtx.currentTime;
 
-    // --- メイン・ファンファーレの再現 ---
-    // 1. ジャーン！ (Bb Major)
-    playNote(233.08, now, 2.0, 0.3); // Bb3
-    playNote(349.23, now, 2.0, 0.3); // F4
-    playNote(466.16, now, 2.0, 0.3); // Bb4
-
-    // 2. パパパパーン (タッタッタッ)
-    const rhythm = 0.2;
-    playNote(349.23, now + 2.0, rhythm);       // F4
-    playNote(311.13, now + 2.0 + rhythm, rhythm); // Eb4
-    playNote(293.66, now + 2.0 + rhythm*2, rhythm); // D4
-    playNote(466.16, now + 2.0 + rhythm*3, 1.5, 0.3); // Bb4 (High)
+    // 1. 扉が開く演出
+    document.getElementById('gate-door').classList.add('open');
     
-    // 3秒後に自動転送したい場合は以下をコメントアウト解除
-    // setTimeout(() => { window.location.href = "home.html"; }, 10000);
+    // 2. チャイム音 (ピンポーン)
+    playSound(659.25, now, 0.5, 'sine'); // E5
+    playSound(523.25, now + 0.5, 0.8, 'sine'); // C5
+
+    // 3. スターウォーズ・ファンファーレ (少し遅れて開始)
+    const sw = now + 1.5;
+    playSound(233.08, sw, 1.5, 'sawtooth', 0.3); // Bb3
+    playSound(349.23, sw, 1.5, 'sawtooth', 0.3); // F4
+    playSound(466.16, sw, 1.5, 'sawtooth', 0.3); // Bb4
+
+    // 4. 各種表示の切り替え
+    setTimeout(() => {
+        document.getElementById('art-display').style.display = 'block';
+        document.getElementById('bttf-msg').style.display = 'block';
+        document.getElementById('bless-msg').style.display = 'block';
+        document.getElementById('star-wars-crawl').style.display = 'block';
+    }, 1000);
 }
 </script>
 
