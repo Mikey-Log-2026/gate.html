@@ -14,6 +14,20 @@
         /* 背景：マトリックス */
         #matrix { position: fixed; top: 0; left: 0; z-index: 1; }
 
+        /* 扉の奥に浮かび上がる画像 */
+        #final-image {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            width: 70%; max-width: 600px;
+            opacity: 0; z-index: 2;
+            transition: all 5s ease-in-out;
+            filter: drop-shadow(0 0 20px #0f0);
+        }
+        /* 画像表示時のアニメーション */
+        .show-image #final-image {
+            opacity: 1; transform: translate(-50%, -50%) scale(1);
+        }
+
         /* 扉の設定 */
         .door-wrapper {
             position: relative; width: 100%; height: 100%;
@@ -24,14 +38,16 @@
             background-image: url('image.PNG');
             background-size: cover; background-position: center;
             border: 2px solid #0f0;
-            transition: transform 3.0s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1), opacity 3s;
         }
         .left { left: 0; transform-origin: left; }
         .right { right: 0; transform-origin: right; }
-        .open .left { transform: rotateY(-110deg); opacity: 0; }
-        .open .right { transform: rotateY(110deg); opacity: 0; }
 
-        /* スターウォーズ風クロール */
+        /* 扉が開く動作 */
+        .open .left { transform: rotateY(-120deg); opacity: 0; pointer-events: none; }
+        .open .right { transform: rotateY(120deg); opacity: 0; pointer-events: none; }
+
+        /* スターウォーズ風テロップ */
         .crawl-container {
             position: absolute; bottom: -100px; width: 100%;
             display: flex; justify-content: center; z-index: 5;
@@ -40,7 +56,7 @@
         }
         .crawl-text {
             color: #ffe81f; font-weight: bold; text-align: center;
-            font-size: 1.8rem; line-height: 2.2;
+            font-size: 1.8rem; line-height: 2.5;
             animation: crawl 45s linear infinite;
         }
         @keyframes crawl {
@@ -48,9 +64,9 @@
             100% { transform: translateY(-450%); }
         }
 
-        /* 中央タイトル */
+        /* 中央のタイトルボタン */
         .center-title {
-            position: absolute; top: 40%; left: 50%;
+            position: absolute; top: 45%; left: 50%;
             transform: translate(-50%, -50%);
             color: #ffe81f; text-align: center; z-index: 20;
             cursor: pointer;
@@ -59,15 +75,17 @@
         }
     </style>
 </head>
-<body>
+<body id="body-tag">
 
 <canvas id="matrix"></canvas>
+
+<img src="image.PNG" id="final-image">
 
 <div class="door-wrapper" id="wrapper" onclick="startSequence()">
     <div class="door left"></div>
     <div class="door right"></div>
     
-    <div class="crawl-container">
+    <div class="crawl-container" id="crawl-box">
         <div class="crawl-text">
             2026年<br>
             鍵の管理はMiKey Logへ移行となる。<br><br>
@@ -80,12 +98,31 @@
     </div>
 
     <div class="center-title" id="title">
-        MIKEY LOG<br>
-        <span style="font-size: 1rem; letter-spacing: 2px;">CLICK TO ENTER</span>
+        MIKEY LOG 2026<br>
+        <span style="font-size: 1rem; letter-spacing: 2px;">CLICK TO UNLOCK FUTURE</span>
     </div>
 </div>
 
 <script>
+    // ブラウザのWeb Audio APIを使って扉が開く「音」を生成
+    function playOpenSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; // 近未来的な音
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 3);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 3);
+        } catch(e) { console.log("Audio play error"); }
+    }
+
+    // 音声読み上げ
     function speak(msg) {
         const uttr = new SpeechSynthesisUtterance(msg);
         uttr.lang = 'ja-JP';
@@ -94,20 +131,26 @@
         window.speechSynthesis.speak(uttr);
     }
 
+    // メインシーケンス
     function startSequence() {
-        const message = "2026年。鍵の管理は、マイキー ログへ移行となり、人々はキューアールコードをかざすだけでキーボックスの扉を開いて大幅な管理工数を削減する事になる。さぁ〜未知への扉を開けて笑顔で待っている貴方に手を伸ばそう！";
+        // 全文ナレーション
+        const message = "2026年。鍵の管理は、マイキー ログへ移行となり、人々はキューアールコードをかざすだけでキーボックスの扉を開いて大幅な管理工数を削減する事になる。さぁ〜未知への扉を開けて笑顔で待っている貴方に手を伸ばそう！ 君に幸あれ！";
         
         speak(message);
+        playOpenSound();
         
-        // 扉を開ける演出（開いたままにする）
+        // 扉を開ける
         document.getElementById('wrapper').classList.add('open');
         document.getElementById('title').style.display = 'none';
 
-        // 自動遷移（window.location.href）を削除しました
-        // これで404エラーになることはありません。
+        // セリフの後半に合わせて画像を浮かび上がらせ、テロップを消す
+        setTimeout(() => {
+            document.getElementById('body-tag').classList.add('show-image');
+            document.getElementById('crawl-box').style.opacity = '0';
+        }, 8000); 
     }
 
-    /* マトリックス背景 */
+    /* マトリックス描画 */
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
