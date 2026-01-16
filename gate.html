@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>開錠</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>開錠</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -34,7 +35,6 @@
        
         #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 999; }
         
-        /* 最後の画像表示用の設定 (大文字のPNGに修正済み) */
         #final-image-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('image.PNG') no-repeat center center;
@@ -50,7 +50,7 @@
         }
     </style>
 </head>
-<body onclick="start();" lang="ja">
+<body onclick="start();">
 
     <canvas id="matrix-canvas"></canvas>
     <canvas id="warp-canvas"></canvas>
@@ -84,6 +84,7 @@
         const mCtx = mCanvas.getContext('2d');
         mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
         const drops = Array(Math.floor(mCanvas.width/25)).fill(1);
+        
         function drawM() {
             mCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
             mCtx.fillStyle = "#0F0"; mCtx.font = "15px monospace";
@@ -94,6 +95,9 @@
             mReq = requestAnimationFrame(drawM);
         }
         drawM();
+
+        // iOS用の音声リスト読み込み対策
+        window.speechSynthesis.getVoices();
 
         function playSnd(f, d, t="sawtooth", v=0.1, fade=true) {
             if(!audioCtx) return;
@@ -120,12 +124,19 @@
         }
 
         function start() {
-            if(isStarted) return; isStarted = true;
+            if(isStarted) return; 
+            isStarted = true;
+            
+            // AudioContextの初期化
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
             cancelAnimationFrame(mReq);
             document.getElementById('matrix-canvas').style.display = 'none';
             document.getElementById('guide-msg').style.display = 'none';
+            
+            // 進行中の音声をキャンセル
             window.speechSynthesis.cancel();
+            
             playSnd(440, 0.1, "sine", 0.05);
             setTimeout(runCrawl, 100);
         }
@@ -137,10 +148,15 @@
             txt.style.display = 'block';
 
             const uttr = new SpeechSynthesisUtterance(txt.innerText);
+            
+            // iOS対策: 再生直前にボイスを再取得して設定
             const voices = window.speechSynthesis.getVoices();
-            uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri"))) || voices[0];
+            const jpVoice = voices.find(v => v.lang === 'ja-JP' || v.lang === 'ja_JP');
+            if (jpVoice) {
+                uttr.voice = jpVoice;
+            }
+            uttr.lang = 'ja-JP'; // 言語を日本語に固定
             uttr.rate = 0.9;
-            uttr.lang = 'ja-JP';
 
             let startTime = null;
             const scrollDuration = 22000;
@@ -155,6 +171,8 @@
 
             uttr.onend = () => { setTimeout(showDoor, 100); };
             window.speechSynthesis.speak(uttr);
+            
+            // 音声が止まってしまった場合のバックアップタイマー
             setTimeout(() => { if(swWin.style.display !== 'none') showDoor(); }, 25000);
         }
 
@@ -177,6 +195,7 @@
             document.body.classList.add('shaking');
             let stars = [];
             for(let i=0; i<150; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
+            
             function animateWarp() {
                 wCtx.fillStyle="rgba(0,0,0,0.3)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
                 wCtx.strokeStyle="#fff"; wCtx.lineWidth=2;
@@ -199,8 +218,6 @@
                     document.body.classList.remove('shaking');
                     cancelAnimationFrame(wReq);
                     wCanvas.style.display = 'none';
-                    
-                    // 最後に画像とメッセージを表示
                     document.getElementById('final-image-bg').style.opacity = '1';
                     document.getElementById('blessing-msg').style.opacity = '1';
                     playBlessingChord();
